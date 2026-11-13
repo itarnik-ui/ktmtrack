@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KTM Construction Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 font-sans p-4 md:p-6">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        function App() {
+          const [activeTab, setActiveTab] = React.useState('projects');
+          const [currentUser, setCurrentUser] = React.useState({ name: 'คุณเม (Admin / MD)', role: 'admin' });
+
+          const projects = [
+            {
+              id: 1,
+              name: 'โครงการก่อสร้างรางระบายน้ำ คสล. สาย ก',
+              client: 'เทศบาลนครนครราชสีมา',
+              budget: 2450000,
+              stage: 6,
+              agingDays: 18,
+              paymentStatus: 'ยื่นหนังสือทวงถามแล้ว',
+              defectNote: 'แก้ไขความยาวรางระบายน้ำช่วงปลายขาด 60 ซม. เรียบร้อย',
+              finalHandoverDate: '2026-10-15',
+            },
+            {
+              id: 2,
+              name: 'โครงการปรับปรุงถนนผิวทาง Asphaltic Concrete',
+              client: 'อบจ. นครราชสีมา',
+              budget: 5800000,
+              stage: 4,
+              agingDays: 5,
+              paymentStatus: 'กำลังดำเนินการหน้างาน',
+              defectNote: '-',
+              finalHandoverDate: '',
+            }
+          ];
+
+          const calculateDeadlines = (handoverDateStr) => {
+            if (!handoverDateStr) return { kFactorDeadline: '-', warrantyDeadline: '-', daysLeftK: null };
+            const handoverDate = new Date(handoverDateStr);
+            const kDate = new Date(handoverDate);
+            kDate.setDate(kDate.getDate() + 90);
+            const warrantyDate = new Date(handoverDate);
+            warrantyDate.setFullYear(warrantyDate.getFullYear() + 2);
+            const today = new Date();
+            const daysLeftK = Math.ceil((kDate - today) / (1000 * 60 * 60 * 24));
+            return {
+              kFactorDeadline: kDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
+              warrantyDeadline: warrantyDate.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' }),
+              daysLeftK
+            };
+          };
+
+          return (
+            <div className="max-w-4xl mx-auto space-y-6">
+              <header className="bg-slate-800 border border-slate-700 rounded-2xl p-4 shadow-xl flex flex-col sm:flex-row justify-between items-center gap-3">
+                <div>
+                  <h1 className="text-xl font-bold text-amber-400">🏗️ KTM Construction Tracker</h1>
+                  <p className="text-xs text-slate-400">ระบบบริหารจัดการโครงการก่อสร้างภาครัฐ</p>
+                </div>
+                <select 
+                  className="bg-slate-900 text-amber-300 text-sm p-2 rounded-lg border border-slate-700"
+                  value={currentUser.role}
+                  onChange={(e) => {
+                    const r = e.target.value;
+                    if (r === 'admin') setCurrentUser({ name: 'คุณเม (Admin)', role: 'admin' });
+                    else if (r === 'engineer') setCurrentUser({ name: 'วิศวกรสนาม', role: 'engineer' });
+                    else setCurrentUser({ name: 'ฝ่ายบัญชี/เอกสาร', role: 'office' });
+                  }}
+                >
+                  <option value="admin">👑 คุณเม (Admin / MD)</option>
+                  <option value="engineer">👷‍♂️ วิศวกรสนาม</option>
+                  <option value="office">📊 ฝ่ายบัญชี/เอกสาร</option>
+                </select>
+              </header>
+
+              <div className="flex gap-2 border-b border-slate-800 pb-2 overflow-x-auto">
+                <button onClick={() => setActiveTab('projects')} className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${activeTab === 'projects' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>📋 โครงการ</button>
+                <button onClick={() => setActiveTab('financial')} className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${activeTab === 'financial' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>💰 ค่างวด</button>
+                <button onClick={() => setActiveTab('compliance')} className={`px-4 py-2 rounded-xl text-sm font-semibold whitespace-nowrap ${activeTab === 'compliance' ? 'bg-amber-500 text-slate-950' : 'bg-slate-800 text-slate-300'}`}>⏳ ค่า K & ค้ำประกัน</button>
+              </div>
+
+              {activeTab === 'projects' && projects.map(p => (
+                <div key={p.id} className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-3">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <span className="text-xs bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded-full">{p.client}</span>
+                      <h3 className="text-lg font-bold text-white mt-1">{p.name}</h3>
+                    </div>
+                    {currentUser.role !== 'engineer' && (
+                      <span className="text-amber-400 font-bold text-sm">{p.budget.toLocaleString()} บ.</span>
+                    )}
+                  </div>
+                  <p className="text-sm text-slate-300">🛠️ Defect: {p.defectNote}</p>
+                  <p className="text-sm text-red-400 font-bold">⏳ Aging รอเงินงวด: {p.agingDays} วัน ({p.paymentStatus})</p>
+                </div>
+              ))}
+
+              {activeTab === 'financial' && (
+                <div className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-3">
+                  <h3 className="font-bold text-white">สถานะการเบิกจ่าย</h3>
+                  {projects.map(p => (
+                    <div key={p.id} className="bg-slate-900 p-3 rounded-xl flex justify-between items-center">
+                      <div>
+                        <p className="font-semibold text-sm">{p.name}</p>
+                        <p className="text-xs text-amber-300">{p.paymentStatus} (รอ {p.agingDays} วัน)</p>
+                      </div>
+                      <span className="font-bold text-amber-400 text-sm">
+                        {currentUser.role === 'engineer' ? '🔒 จำกัดสิทธิ์' : `${p.budget.toLocaleString()} บ.`}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {activeTab === 'compliance' && projects.map(p => {
+                const d = calculateDeadlines(p.finalHandoverDate);
+                return (
+                  <div key={p.id} className="bg-slate-800 border border-slate-700 rounded-2xl p-5 space-y-4">
+                    <h3 className="font-bold text-white">{p.name}</h3>
+                    <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-xl">
+                      <span className="text-xs text-red-400 block font-semibold">⚠️ กำหนดเขตยื่นขอ "ค่า K" (ภายใน 90 วัน)</span>
+                      <p className="text-white font-bold">{d.kFactorDeadline} {d.daysLeftK !== null ? `(เหลือ ${d.daysLeftK} วัน)` : ''}</p>
+                    </div>
+                    <div className="bg-blue-500/10 border border-blue-500/30 p-3 rounded-xl">
+                      <span className="text-xs text-blue-300 block font-semibold">🛡️ ครบกำหนดคืน "ค้ำประกันสัญญา & Retention" (2 ปี)</span>
+                      <p className="text-white font-bold">{d.warrantyDeadline}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        }
+        ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+</body>
+</html>
